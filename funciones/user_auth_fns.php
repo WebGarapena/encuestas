@@ -1,6 +1,7 @@
 <?php
 require_once("db_fns.php");
 function insertar_encuesta($user, $tipo, $agregar, $titulo, $descripcion, $respuestas){
+
 	// registra una nueva persona en la base de datos
 	// devuelve un mensaje true o error
 	//conectar a la base de datos
@@ -8,22 +9,37 @@ function insertar_encuesta($user, $tipo, $agregar, $titulo, $descripcion, $respu
 	if (!$conn){
 		return "No se puede conectar a la base de datos - Intentalo mas tarde por favor.";
 	}
-	// Comprobar si el usaurio existe por segunda vez.
-	$result = mysqli_query($conn, "select * from usuarios where usuario='$user'");
+	// Comprobar si el usuario existe por segunda vez.
+	//echo $user;
+	$result = mysqli_query($conn, "select * from usuarios where nombre='$user'");
+	$result=mysqli_fetch_row($result);//recoge los datos de la consulta en una fila
 	if (!$result) {
-		return "Tu usario no existe, como te has logueado?";
+		return "Tu usuario no existe, como te has logueado?";
 	}
-	
-	//INSERTAR LA ENCUESTA Y LAS OPCIONES
-	if (mysqli_num_rows($result)>0){
-		return "El nombre de usuario esta ocupado - Vuelve y elige otro";
-	}	
-	// si correcto, ponerlo en la base de datos
-	$result = mysqli_query($conn, "insert into user values ('$username',password('$password'),'$email')");
 
-	if (!$result) {
-	return "No hemos podido registrarte en la base de datos - Intentalo mas tarde, por favor.";
-	}
+	//paso a una variable el id del usuario logueado y comprobado
+	$id_usuario = $result[0];
+
+	// si el usuario es correcto, insertar la encuesta
+	$result = mysqli_query($conn, "insert into encuestas values (NULL, '$tipo', '$agregar', '$titulo', '$descripcion', '".date("Y-m-d H:i:s")."', '".date("Y-m-d H:i:s")."','$id_usuario')");
+
+	// compruebo si hay resultado en la insercion
+	if (!$result || !mysqli_insert_id($conn)) {
+	return "No hemos podido insertar la encuesta en la base de datos - Intentalo mas tarde, por favor.";
+	}else{
+		$id_encuesta= mysqli_insert_id($conn);//si la insercion ha tenido exito, su identificador sera el propio de la encuesta recien creada, asi que se guardara en la variable $id_encuesta
+		
+		//insertamos las opciones de respuestas[]
+		for($i=0;$i<count($respuestas);$i++){
+			$opcion= $respuestas[$i];
+			$result = mysqli_query($conn, "insert into opciones_respuestas values (NULL,'$opcion','$id_encuesta')");
+
+			if (!$result){
+				return "Hubo un error al guardar";
+			}
+		}//fin for
+	}//fin else
+
 	return true;
 }//fin function
 

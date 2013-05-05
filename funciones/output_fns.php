@@ -6,10 +6,14 @@ function do_html_header($title){
 <head>
     <title><?php echo $title; ?></title>
     <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
     <style>
     </style>
 	<link rel="stylesheet" href="estilo.css" type="text/css"/>
 	<script type="text/javascript" language="javascript" src="jquery.2.0.0.js"></script>
+	<script type="text/javascript" language="javascript" src="jquery-ui-1.10.3.custom.min.js"></script>
+	<script type="text/javascript" language="javascript" src="datepicker-es.js"></script>
+	<!--<script type="text/javascript" language="javascript" src="jquery.ptTimeSelect.js"></script>->
 </head>
 		<body>
 			<!--<img src="../style/marcador.gif" alt="PHPbookmark logo" border=0 align=left valign=bottom height= 50 width= 150>-->
@@ -43,46 +47,51 @@ function display_login_form(){
 function display_encuesta_form(){
 ?>
 	<script type="text/javascript" language="javascript">
-		$(document).ready(function(){
-			var titulo = $("<label>Titulo:</label><br/><input type='text' name='titulo' maxlength='100' placeholder='Introduce la pregunta' required/><br/>");
-			var descripcion = $("<label>Descripción:</label><br/><textarea cols='30' placeholder='Puedes agregar información a la encuesta' name='descripcion'></textarea><br/>");
-			var respuesta1 = $("<label>Respuesta 1:</label><br/><input type='text' name='respuestas[]' maxlength='100' placeholder='Respuesta 1' required/><br/>");
-			var respuesta2 = $("<label>Respuesta 2:</label><br/><input type='text' name='respuestas[]' maxlength='100' placeholder='Respuesta 2' required/>"+
-										"<input type='button' class='boton' onclick='agrega_campos()' value='+' />" );
-			/*var tipo = $("<label><b>Tipo de encuesta:</b> </label><br/><input type='radio' name='tipo' value='simple'/><span>Simple (1 sola respuesta)</span><br/>"+
-															"<input type='radio' name='tipo' value='multiple'/><span>Multiple (varias respuestas)</span><br/>"+
-															"<input type='radio' name='tipo' value='cantidad'/><span>Cantidad (valores de 0 a 9)</span><br/>");*/
-			$("#continuar").click(function(){
-				$("form").append(titulo, descripcion, respuesta1, respuesta2, enviar);
-			});
-		});
 	</script>
 	<form method='post' action='recoge_poll.php'>
 		<div id="condiciones">
 			<label><b>Tipo de encuesta:</b> </label><br/>
-			<input type='radio' name='tipo'  value='simple' checked /><span>Simple</span>
-			<input type='radio' name='tipo'  value='multiple'/><span>Multiple</span>
-			<input type='radio' name='tipo'  value='cantidad'/><span>Cantidad</span><br/>
+			<input type='radio' name='tipo'  value='0' checked /><span>Simple</span>
+			<input type='radio' name='tipo'  value='1'/><span>Multiple</span>
+			<input type='radio' name='tipo'  value='2'/><span>Cantidad</span><br/>
 			<label><b>El usuario puede añadir respuestas?</b> </label><br/>
-			<input type='radio' name='agregar'  value='si'/><span>Si</span>
-			<input type='radio' name='agregar'  value='no' checked /><span>No</span><br/>
+			<input type='radio' name='agregar'  value='1'/><span>Si</span>
+			<input type='radio' name='agregar'  value='0' checked /><span>No</span><br/>
 			<label><b>Fecha y hora de fin de la encuesta?</b> </label><br/>
-			<input type="datetime" id="datetime" /><br/>
+			<input type="text" id="date" size="10" placeholder="Fecha"/>
+			a las <input type="text"  id="hora" size="10" placeholder="Hora" /><br/>
 			<input type="button" id="continuar" value="Continuar"/>
 		</div>
 	</form>
 	<script type="text/javascript" language="javascript">
-	var contador = 3;
-			function agrega_campos(){
-				$("input:last").before("<label>Respuesta '"+contador+"':</label><br/><input type='text' name='respuestas[]' maxlength='100' class='"+contador+"' placeholder='Respuesta "+contador+"'/>"+
-											 "<input type='button'  class='"+contador+"' onclick='elimina_me("+contador+")' value='X' ><br class='"+contador+"'>");
-				contador++;
+	$(document).ready(function(){
+			$( "#date" ).datepicker({ dateFormat: "dd-mm-yy" });
+			var dateFormat = $( "#date" ).datepicker( "option", "dateFormat" );
+			$( "#date" ).datepicker( "option", "dateFormat", "dd-mm-yy" ); 
+			
+			var titulo = $("<label>Titulo:</label><br/><input type='text' name='titulo' maxlength='100' placeholder='Introduce la pregunta' required/><br/>");
+			var descripcion = $("<label>Descripción:</label><br/><textarea name='descripcion' cols='30' placeholder='Puedes agregar información a la encuesta' name='descripcion'></textarea><br/>");
+			var respuesta1 = $("<label>Respuesta 1:</label><br/><input type='text' name='respuestas[]' maxlength='100' placeholder='Respuesta 1' required/><br/>");
+			var respuesta2 = $("<label>Respuesta 2:</label><br/><input type='text' name='respuestas[]' maxlength='100' placeholder='Respuesta 2' required/>"+
+										"<input type='button' class='boton' onclick='agrega_campos()' value='+' />" );
+										
+			$("#continuar").click(function(){
+				$("form").append(titulo, descripcion, respuesta1, respuesta2, enviar);
+				$("#condiciones").hide();
+			});
+			
+			var contador = 3;
+					function agrega_campos(){
+						$("input:last").before("<label class='"+contador+"'>Respuesta "+contador+":</label><br class='"+contador+"'/><input type='text' name='respuestas[]' maxlength='100' class='"+contador+"' placeholder='Respuesta "+contador+"'/>"+
+													 "<input type='button'  class='"+contador+"' onclick='elimina_me("+contador+")' value='X' ><br class='"+contador+"'>");
+						contador++;
+					}
+			function elimina_me(campo){
+				$("."+campo).remove();
+				contador--;
 			}
-	function elimina_me(campo){
-		$("."+campo).remove();
-		contador--;
-	}
-	var enviar = $("<br/><input type='submit'  value='Crear encuesta'/>");
+			var enviar = $("<br/><input type='submit'  value='Crear encuesta'/>");
+	});
 	</script>
 <?php
 }
