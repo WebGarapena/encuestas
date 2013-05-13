@@ -94,11 +94,14 @@ function display_encuesta_form(){
 	});
 	</script>
 <?php
-}
-//fin function
-
+}//fin function
 function display_user_encuestas(){
-	echo "Encuestas de ".$user;
+	
+	
+}
+
+function display_total_encuestas(){
+	
 	
 }
 

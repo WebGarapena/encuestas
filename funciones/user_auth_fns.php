@@ -1,51 +1,100 @@
 <?php
 require_once("db_fns.php");
-function insertar_encuesta($user, $tipo, $agregar, $titulo, $descripcion, $respuestas){
+function insertar_encuesta($user, $tipo, $agregar, $titulo, $descripcion, $respuestas, $error){
 
 	// registra una nueva persona en la base de datos
 	// devuelve un mensaje true o error
 	//conectar a la base de datos
 	$conn = db_connect();
 	if (!$conn){
-		return "No se puede conectar a la base de datos - Intentalo mas tarde por favor.";
+		$error = "No se puede conectar a la base de datos - Intentalo mas tarde por favor.";
+		return false;
 	}
 	// Comprobar si el usuario existe por segunda vez.
 	//echo $user;
 	$result = mysqli_query($conn, "select * from usuarios where nombre='$user'");
 	$result=mysqli_fetch_row($result);//recoge los datos de la consulta en una fila
 	if (!$result) {
-		return "Tu usuario no existe, como te has logueado?";
+		$error = "Tu usuario no existe, como te has logueado?";
+		return false;
 	}
 
 	//paso a una variable el id del usuario logueado y comprobado
 	$id_usuario = $result[0];
 
-	// si el usuario es correcto, insertar la encuesta
-	$result = mysqli_query($conn, "insert into encuestas values (NULL, '$tipo', '$agregar', '$titulo', '$descripcion', '".date("Y-m-d H:i:s")."', '".date("Y-m-d H:i:s")."','$id_usuario')");
+	if(!isset ($_SESSION['poll'] )){ 
+		// MIRAR POR QUE NO FUNCIONA SIN EL ISSET INICIANDO LA VARIABLE FUERA, CON UN VALOR Y CAMBIANDOLO AL EJECUTAR LA PRIMERA VEZ 
+		$_SESSION['poll'] = 1;
+		// si el usuario es correcto, insertar la encuesta
+		$result = mysqli_query($conn, "INSERT INTO encuestas values (NULL, '$tipo', '$agregar', '$titulo', '$descripcion', '".date("Y-m-d H:i:s")."', '".date("Y-m-d H:i:s")."','$id_usuario')");
 
-	// compruebo si hay resultado en la insercion
-	if (!$result || !mysqli_insert_id($conn)) {
-	return "No hemos podido insertar la encuesta en la base de datos - Intentalo mas tarde, por favor.";
-	}else{
-		$id_encuesta= mysqli_insert_id($conn);//si la insercion ha tenido exito, su identificador sera el propio de la encuesta recien creada, asi que se guardara en la variable $id_encuesta
-		
-		//insertamos las opciones de respuestas[]
-		for($i=0;$i<count($respuestas);$i++){
-			$opcion= $respuestas[$i];
-			$result = mysqli_query($conn, "insert into opciones_respuestas values (NULL,'$opcion','$id_encuesta')");
+		// compruebo si hay resultado en la insercion
+		if (!$result || !mysqli_insert_id($conn)) {
+			$error = "No hemos podido insertar la encuesta en la base de datos - Intentalo mas tarde, por favor.";
+			return false;
+		}else{
+			$id_encuesta= mysqli_insert_id($conn);//si la insercion ha tenido exito, su identificador sera el propio de la encuesta recien creada, asi que se guardara en la variable $id_encuesta
+			
+			//insertamos las opciones de respuestas[]
+			for($i=0;$i<count($respuestas);$i++){
+				$opcion= $respuestas[$i];
+				$result = mysqli_query($conn, "insert into opciones_respuestas values (NULL,'$opcion','$id_encuesta')");
 
-			if (!$result){
-				return "Hubo un error al guardar";
-			}
-		}//fin for
-	}//fin else
-
+				if (!$result){
+					$error = "Hubo un error al guardar";
+					return false;
+				}
+			}//fin for
+		}//fin else
+	}
 	return true;
 }//fin function
 
+function mostrar_user_encuestas($tipo, $agregar, $error){//mostrar las encuestas creadas por el usuario
+
+	$user = $_SESSION['valid_user'];
+	echo "<h5>Tus encuestas ".$user.":</h5>";
+
+$conn= db_connect ();
+	if (!$conn){
+		$error= "No se puede conectar a la base de datos.";
+		return false;
+	}
+	//seleccionamos el identioficador del usuario logueado.
+	$result = mysqli_query ($conn, "SELECT id_usuario,nombre FROM usuarios WHERE  nombre='$user' " );
+	$result= mysqli_fetch_row ($result);//Convierte los resultados de la consulta en un array.
+	$id_usuario = $result[0];//Guardamos el identificador, que es el primer elemento del array generado antes.
+	if(!$result){
+		$error = "Ha habido un problema con tu usuario";
+		return false;
+	}
+	//Guardamos en $result las Id's , Titulos y los campos de respuestas cogiendolos por la id del usuario extraido en consulta anterior.
+	$result = mysqli_query ($conn, "SELECT encuestas.id_encuesta, titulo, nombre_opcion FROM encuestas, opciones_respuestas WHERE id_usuario = '$id_usuario' AND encuestas.id_encuesta = opciones_respuestas.id_encuesta");
+	//Cada fila es un array individual con los datos de cada encuesta.
+	
+	//Metemos cada fila (array) del resultado de la consulta anterior en un indice numerico llamado $result2 con lo que generamos un array padre.
+	while ($fila= mysqli_fetch_row($result)){
+		$result2[]=$fila;
+	}
+	
+	for ($i=0; $i<count($result2); $i++){// Recorremos todos los elementos de la consulta
+		if($i==0 || $result2[$i][0] != $result2[$i-1][0]){
+			// Si es el primer elemento que entra de la consulta recorrido con el for, o el elemento es el mismo del anterior....
+			echo "<b>Titulo:</b>".$result2[$i][1]."<br>";
+		}
+		echo $result2[$i][2]."<br>";
+	}
+	
+}//fi function
+
+function mostrar_total_encuestas(){
+	echo "<br/>Encuestas del sitio";
+}
+
 function insertar_voto(){
 	
-}
+}//fin function
+
 function register($username, $email, $password){
 	// registra una nueva persona en la base de datos
 	// devuelve un mensaje true o error
